@@ -8,5 +8,6 @@ public class SimuladorApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(SimuladorApplication.class, args);
+
     }
 }

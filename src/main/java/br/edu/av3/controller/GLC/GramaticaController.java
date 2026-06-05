@@ -1,4 +1,4 @@
-package br.edu.av3.controller;
+package br.edu.av3.controller.GLC;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

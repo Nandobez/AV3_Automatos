@@ -1,4 +1,4 @@
-package br.edu.av3.service;
+package br.edu.av3.service.AF;
 
 import org.springframework.stereotype.Service;
 
