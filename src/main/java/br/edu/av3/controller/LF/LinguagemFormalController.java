@@ -3,7 +3,6 @@ package br.edu.av3.controller.LF;
 import br.edu.av3.dto.LF.ConcatenarRequest;
 import br.edu.av3.dto.LF.ValidacaoResponse;
 import br.edu.av3.dto.LF.ValidarCadeiaRequest;
-import br.edu.av3.exception.ValidacaoException;
 import br.edu.av3.model.LF.Alfabeto;
 import br.edu.av3.service.LF.LinguagemFormalService;
 import org.springframework.web.bind.annotation.*;
@@ -25,16 +24,16 @@ public class LinguagemFormalController {
         this.service = service;
     }
 
-    /** POST /api/linguagem-formal/validar -> valida se a cadeia pertence ao alfabeto e devolve o tamanho. */
+    /**
+     * POST /api/linguagem-formal/validar -> valida se a cadeia pertence ao alfabeto e devolve o tamanho.
+     * Se a cadeia for invalida, o service lanca ValidacaoException e o GlobalExceptionHandler
+     * responde 400 com a mensagem do erro.
+     */
     @PostMapping("/validar")
     public ValidacaoResponse validar(@RequestBody ValidarCadeiaRequest req) {
         Alfabeto alfabeto = new Alfabeto(req.alfabeto());
-        try {
-            service.validarCadeia(alfabeto, req.cadeia());
-            return new ValidacaoResponse(true, service.tamanho(req.cadeia()), "Cadeia valida para Sigma");
-        } catch (ValidacaoException e) {
-            return new ValidacaoResponse(false, service.tamanho(req.cadeia()), e.getMessage());
-        }
+        service.validarCadeia(alfabeto, req.cadeia());
+        return new ValidacaoResponse(true, service.tamanho(req.cadeia()), "Cadeia valida para Sigma");
     }
 
     /** POST /api/linguagem-formal/concatenar -> w1 . w2. */
