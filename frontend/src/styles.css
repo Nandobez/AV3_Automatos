@@ -1,0 +1,168 @@
+:root {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --line: #334155;
+  --txt: #e2e8f0;
+  --mut: #94a3b8;
+  --pri: #38bdf8;
+  --ok: #22c55e;
+  --nao: #ef4444;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+}
+
+.app { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+header h1 { font-size: 22px; margin: 0 0 4px; }
+header p { color: var(--mut); margin: 0 0 20px; }
+
+.painel { display: grid; grid-template-columns: 260px 1fr; gap: 16px; }
+
+.menu { display: flex; flex-direction: column; gap: 6px; }
+.item {
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--txt);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+.item:hover { border-color: var(--pri); }
+.item.ativo { border-color: var(--pri); background: #16304a; }
+.item .mod { font-size: 11px; color: var(--mut); }
+.item .ac { font-size: 14px; font-weight: 600; }
+
+.conteudo {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+.conteudo h2 { margin: 0 0 12px; font-size: 18px; }
+
+.rota { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.metodo {
+  background: var(--pri);
+  color: #06283d;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.rota code, .path {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  color: var(--mut);
+}
+.path {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: var(--txt);
+}
+
+.corpo {
+  width: 100%;
+  min-height: 220px;
+  background: var(--bg);
+  color: var(--txt);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.executar {
+  margin-top: 10px;
+  background: var(--pri);
+  color: #06283d;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.executar:disabled { opacity: 0.6; cursor: default; }
+
+.erro {
+  margin-top: 14px;
+  background: #3a1216;
+  border: 1px solid var(--nao);
+  color: #fecaca;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.resultado { margin-top: 16px; }
+.resumo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+.badge { font-weight: 700; padding: 3px 10px; border-radius: 5px; font-size: 13px; }
+.badge.ok { background: var(--ok); color: #052e16; }
+.badge.nao { background: var(--nao); color: #450a0a; }
+.info { color: var(--mut); font-size: 13px; }
+
+.bloco { margin-bottom: 16px; }
+.bloco h3 { font-size: 14px; margin: 0 0 8px; color: var(--pri); }
+
+.cadeias, .derivacao { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+}
+.forma { background: var(--bg); padding: 2px 6px; border-radius: 4px; }
+.seta { color: var(--pri); font-weight: 700; }
+
+.passos { width: 100%; border-collapse: collapse; font-size: 13px; }
+.passos th, .passos td {
+  border: 1px solid var(--line);
+  padding: 6px 8px;
+  text-align: left;
+}
+.passos th { background: var(--bg); color: var(--mut); font-weight: 600; }
+.passos code { font-family: ui-monospace, monospace; }
+
+/* Arvore de derivacao em SVG (nos circulares ligados por arestas) */
+.tree { overflow-x: auto; padding: 8px 4px; }
+.svgtree { display: block; }
+.aresta { stroke: var(--line); stroke-width: 2; }
+.no { fill: var(--bg); stroke: var(--line); stroke-width: 2; }
+.no.variavel { fill: var(--pri); stroke: var(--pri); }
+.noTxt {
+  fill: var(--mut);
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 13px;
+}
+.noTxt.variavel { fill: #06283d; }
+
+.bruto { margin-top: 12px; }
+.bruto summary { cursor: pointer; color: var(--mut); font-size: 13px; }
+.bruto pre {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  overflow: auto;
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .painel { grid-template-columns: 1fr; }
+}
