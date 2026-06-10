@@ -98,35 +98,157 @@ O sistema está dividido em duas partes principais:
 
 A arquitetura do backend segue uma divisão em controladores, DTOs, modelos, serviços e classes utilitárias. Os controladores recebem as requisições HTTP, os DTOs representam os dados de entrada, os modelos representam as estruturas formais e os serviços concentram os algoritmos de execução.
 
-Classes principais:
+```mermaid
+classDiagram
+    direction LR
 
-- `LinguagemFormalController`
-- `AutomatoFinitoController`
-- `GramaticaController`
-- `AutomatoPilhaController`
-- `MaquinaTuringController`
-- `LinguagemFormalService`
-- `AutomatoFinitoService`
-- `GramaticaService`
-- `AutomatoPilhaService`
-- `MaquinaTuringService`
-- `ModeloComputacionalService`
-- `AutomatoFinitoFactory`
-- `AutomatoPilhaFactory`
-- `MaquinaTuringFactory`
+    class LinguagemFormalController {
+        +validar(req) ValidacaoResponse
+        +concatenar(req) Map
+        +sigmaEstrela(alfabeto, maxTamanho) List
+        +sigmaMais(alfabeto, maxTamanho) List
+    }
+
+    class AutomatoFinitoController {
+        +executar(req) ResultadoExecucao
+    }
+
+    class GramaticaController {
+        +derivar(req) ResultadoDerivacao
+    }
+
+    class AutomatoPilhaController {
+        +executar(req) ResultadoPilha
+    }
+
+    class MaquinaTuringController {
+        +executar(req) ResultadoTuring
+    }
+
+    class LinguagemFormalService {
+        +validarCadeia(alfabeto, cadeia) boolean
+        +tamanho(cadeia) int
+        +concatenar(w1, w2) String
+        +sigmaEstrela(alfabeto, maxTamanho) List
+        +sigmaMais(alfabeto, maxTamanho) List
+    }
+
+    class ModeloComputacionalService~TModelo,TEntrada,TResultado~ {
+        <<interface>>
+        +executar(modelo, entrada) TResultado
+    }
+
+    class AutomatoFinitoService {
+        +executar(automato, cadeia) ResultadoExecucao
+    }
+
+    class GramaticaService {
+        +derivar(gramatica, cadeia) ResultadoDerivacao
+    }
+
+    class AutomatoPilhaService {
+        +executar(automato, cadeia) ResultadoPilha
+    }
+
+    class MaquinaTuringService {
+        +executar(maquina, entrada) ResultadoTuring
+    }
+
+    class AutomatoFinitoFactory {
+        +compilar(automato) AutomatoFinitoCompilado
+    }
+
+    class AutomatoPilhaFactory {
+        +compilar(automato) AutomatoPilhaCompilado
+    }
+
+    class MaquinaTuringFactory {
+        +compilar(maquina) MaquinaTuringCompilada
+    }
+
+    class Simbolos {
+        +LAMBDA String
+        +EPSILON String
+        +ehEpsilon(simbolo) boolean
+    }
+
+    class Alfabeto
+    class AutomatoFinito
+    class Gramatica
+    class AutomatoPilha
+    class MaquinaTuring
+    class ResultadoExecucao
+    class ResultadoDerivacao
+    class ResultadoPilha
+    class ResultadoTuring
+
+    LinguagemFormalController --> LinguagemFormalService
+    AutomatoFinitoController --> AutomatoFinitoService
+    GramaticaController --> GramaticaService
+    AutomatoPilhaController --> AutomatoPilhaService
+    MaquinaTuringController --> MaquinaTuringService
+
+    AutomatoFinitoService ..|> ModeloComputacionalService
+    AutomatoPilhaService ..|> ModeloComputacionalService
+    MaquinaTuringService ..|> ModeloComputacionalService
+
+    LinguagemFormalService --> Alfabeto
+    AutomatoFinitoService --> AutomatoFinito
+    AutomatoFinitoService --> ResultadoExecucao
+    AutomatoFinitoService --> AutomatoFinitoFactory
+    AutomatoFinitoService --> Simbolos
+    GramaticaService --> Gramatica
+    GramaticaService --> ResultadoDerivacao
+    GramaticaService --> Simbolos
+    AutomatoPilhaService --> AutomatoPilha
+    AutomatoPilhaService --> ResultadoPilha
+    AutomatoPilhaService --> AutomatoPilhaFactory
+    AutomatoPilhaService --> Simbolos
+    MaquinaTuringService --> MaquinaTuring
+    MaquinaTuringService --> ResultadoTuring
+    MaquinaTuringService --> MaquinaTuringFactory
+```
 
 #### Casos de uso
 
 Casos de uso principais:
 
-- validar cadeia sobre um alfabeto;
-- concatenar cadeias;
-- gerar Sigma* e Sigma+;
-- executar autômato finito;
-- executar gramática livre de contexto;
-- executar autômato com pilha;
-- executar máquina de Turing;
-- visualizar passos de execução.
+```mermaid
+flowchart LR
+    Usuario([Usuário])
+
+    subgraph Sistema["Simulador de Linguagens Formais e Modelos Computacionais"]
+        UC1([Validar cadeia])
+        UC2([Concatenar cadeias])
+        UC3([Gerar Sigma*])
+        UC4([Gerar Sigma+])
+        UC5([Executar autômato finito])
+        UC6([Derivar gramática livre de contexto])
+        UC7([Executar autômato com pilha])
+        UC8([Executar máquina de Turing])
+        UC9([Visualizar passos de execução])
+        UC10([Visualizar resultado de aceitação])
+    end
+
+    Usuario --> UC1
+    Usuario --> UC2
+    Usuario --> UC3
+    Usuario --> UC4
+    Usuario --> UC5
+    Usuario --> UC6
+    Usuario --> UC7
+    Usuario --> UC8
+
+    UC5 --> UC9
+    UC6 --> UC9
+    UC7 --> UC9
+    UC8 --> UC9
+    UC1 --> UC10
+    UC5 --> UC10
+    UC6 --> UC10
+    UC7 --> UC10
+    UC8 --> UC10
+```
 
 ### Implementação
 
