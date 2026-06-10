@@ -6,12 +6,12 @@ import br.edu.av3.model.MT.MaquinaTuring;
 import br.edu.av3.model.MT.PassoTuring;
 import br.edu.av3.model.MT.ResultadoTuring;
 import br.edu.av3.model.MT.TransicaoTuring;
+import br.edu.av3.service.ModeloComputacionalService;
+import br.edu.av3.service.MT.MaquinaTuringFactory.MaquinaTuringCompilada;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 /**
  * Logica do Modulo 5 - Maquina de Turing.
@@ -27,19 +27,18 @@ import java.util.Set;
  *  - estourar o limite de passos -> rejeita (protege contra loop infinito).
  */
 @Service
-public class MaquinaTuringService {
+public class MaquinaTuringService implements ModeloComputacionalService<MaquinaTuring, String, ResultadoTuring> {
 
     /** Teto de passos para nao travar em maquinas que nao param. */
     private static final int LIMITE_PASSOS = 100_000;
 
+    @Override
     public ResultadoTuring executar(MaquinaTuring maquina, String entrada) {
         validar(maquina);
+        MaquinaTuringCompilada maquinaCompilada = MaquinaTuringFactory.compilar(maquina);
 
-        char branco = maquina.branco() == 0 ? 'B' : maquina.branco();
-        Set<String> finais = maquina.estadosFinais();
-
-        Fita fita = new Fita(entrada == null ? "" : entrada, branco);
-        String estadoAtual = maquina.estadoInicial();
+        Fita fita = new Fita(entrada == null ? "" : entrada, maquinaCompilada.branco());
+        String estadoAtual = maquinaCompilada.estadoInicial();
         List<PassoTuring> passos = new ArrayList<>();
 
         int passo = 0;
@@ -48,27 +47,20 @@ public class MaquinaTuringService {
             passos.add(new PassoTuring(passo, estadoAtual, String.valueOf(simbolo),
                     fita.conteudo(), fita.getPonteiro()));
 
-            // Estado final -> aceita e para.
-            if (finais != null && finais.contains(estadoAtual)) {
+            if (maquinaCompilada.estadosFinais().contains(estadoAtual)) {
                 return new ResultadoTuring(true, estadoAtual, fita.conteudo(),
                         "Alcancou estado final", passos);
             }
 
-            final String estado = estadoAtual;
-            Optional<TransicaoTuring> transicao = maquina.transicoes().stream()
-                    .filter(t -> t.estadoAtual().equals(estado) && t.simboloLido() == simbolo)
-                    .findFirst();
-
-            // Sem transicao -> para (rejeita).
-            if (transicao.isEmpty()) {
+            TransicaoTuring transicao = maquinaCompilada.transicao(estadoAtual, simbolo);
+            if (transicao == null) {
                 return new ResultadoTuring(false, estadoAtual, fita.conteudo(),
                         "Parou sem transicao valida", passos);
             }
 
-            TransicaoTuring t = transicao.get();
-            fita.escrever(t.simboloEscrito());
-            fita.mover(t.movimento());
-            estadoAtual = t.novoEstado();
+            fita.escrever(transicao.simboloEscrito());
+            fita.mover(transicao.movimento());
+            estadoAtual = transicao.novoEstado();
             passo++;
 
             if (passo > LIMITE_PASSOS) {
@@ -87,6 +79,15 @@ public class MaquinaTuringService {
         }
         if (m.transicoes() == null) {
             throw new ValidacaoException("A maquina precisa de uma lista de transicoes");
+        }
+        for (TransicaoTuring t : m.transicoes()) {
+            if (t == null) {
+                throw new ValidacaoException("Transicao invalida: valor nulo");
+            }
+            if (t.estadoAtual() == null || t.estadoAtual().isBlank()
+                    || t.novoEstado() == null || t.novoEstado().isBlank()) {
+                throw new ValidacaoException("Transicao da maquina usa estado vazio");
+            }
         }
     }
 }

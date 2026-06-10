@@ -5,13 +5,15 @@ import br.edu.av3.model.AP.AutomatoPilha;
 import br.edu.av3.model.AP.PassoPilha;
 import br.edu.av3.model.AP.ResultadoPilha;
 import br.edu.av3.model.AP.TransicaoPilha;
+import br.edu.av3.service.ModeloComputacionalService;
+import br.edu.av3.service.AP.AutomatoPilhaFactory.AutomatoPilhaCompilado;
+import br.edu.av3.util.Simbolos;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Logica do Modulo 4 - Automato com Pilha (PDA), deterministico.
@@ -23,30 +25,30 @@ import java.util.Set;
  * Cobre a linguagem minima L = { a^n b^n | n >= 1 }.
  */
 @Service
-public class AutomatoPilhaService {
+public class AutomatoPilhaService implements ModeloComputacionalService<AutomatoPilha, String, ResultadoPilha> {
 
-    private static final Set<String> EPSILON = Set.of("", "λ", "ε", "&");
     private static final int LIMITE_PASSOS = 100_000;
 
+    @Override
     public ResultadoPilha executar(AutomatoPilha ap, String cadeia) {
         validar(ap);
         String entrada = cadeia == null ? "" : cadeia;
+        AutomatoPilhaCompilado automato = AutomatoPilhaFactory.compilar(ap);
 
         Deque<Character> pilha = new ArrayDeque<>();
-        pilha.push(ap.simboloInicialPilha().charAt(0));
+        pilha.push(automato.simboloInicialPilha());
 
-        String estado = ap.estadoInicial();
+        String estado = automato.estadoInicial();
         int pos = 0;
         List<PassoPilha> passos = new ArrayList<>();
 
         for (int n = 0; ; n++) {
-            // Aceitacao: entrada consumida e estado final.
-            if (pos == entrada.length() && ap.estadosFinais().contains(estado)) {
+            if (pos == entrada.length() && automato.estadosFinais().contains(estado)) {
                 passos.add(passo(estado, entrada, pos, pilha, "Estado final com entrada consumida -> ACEITA"));
                 return new ResultadoPilha(true, "Aceita por estado final", passos);
             }
 
-            TransicaoPilha t = encontrarTransicao(ap, estado, entrada, pos, pilha);
+            TransicaoPilha t = encontrarTransicao(automato, estado, entrada, pos, pilha);
             if (t == null) {
                 passos.add(passo(estado, entrada, pos, pilha, "Sem transicao valida -> PARA"));
                 return new ResultadoPilha(false, "Parou sem transicao valida", passos);
@@ -54,7 +56,7 @@ public class AutomatoPilhaService {
 
             passos.add(passo(estado, entrada, pos, pilha, descrever(t)));
             aplicar(t, pilha);
-            if (!ehEpsilon(t.simboloLido())) {
+            if (!Simbolos.ehEpsilon(t.simboloLido())) {
                 pos++;
             }
             estado = t.novoEstado();
@@ -67,19 +69,14 @@ public class AutomatoPilhaService {
     }
 
     /** Primeira transicao que casa estado + topo da pilha + simbolo lido (ou epsilon). */
-    private TransicaoPilha encontrarTransicao(AutomatoPilha ap, String estado, String entrada, int pos, Deque<Character> pilha) {
-        for (TransicaoPilha t : ap.transicoes()) {
-            if (!t.estadoAtual().equals(estado)) {
-                continue;
-            }
-            // topo da pilha
-            if (!ehEpsilon(t.desempilha())) {
+    private TransicaoPilha encontrarTransicao(AutomatoPilhaCompilado automato, String estado, String entrada, int pos, Deque<Character> pilha) {
+        for (TransicaoPilha t : automato.transicoesDoEstado(estado)) {
+            if (!Simbolos.ehEpsilon(t.desempilha())) {
                 if (pilha.isEmpty() || pilha.peek() != t.desempilha().charAt(0)) {
                     continue;
                 }
             }
-            // simbolo de entrada
-            if (!ehEpsilon(t.simboloLido())) {
+            if (!Simbolos.ehEpsilon(t.simboloLido())) {
                 if (pos >= entrada.length() || entrada.charAt(pos) != t.simboloLido().charAt(0)) {
                     continue;
                 }
@@ -90,12 +87,11 @@ public class AutomatoPilhaService {
     }
 
     private void aplicar(TransicaoPilha t, Deque<Character> pilha) {
-        if (!ehEpsilon(t.desempilha())) {
+        if (!Simbolos.ehEpsilon(t.desempilha())) {
             pilha.pop();
         }
-        if (!ehEpsilon(t.empilha())) {
+        if (!Simbolos.ehEpsilon(t.empilha())) {
             String empilha = t.empilha();
-            // empilha da direita para a esquerda -> o caractere mais a esquerda fica no topo
             for (int i = empilha.length() - 1; i >= 0; i--) {
                 pilha.push(empilha.charAt(i));
             }
@@ -103,7 +99,7 @@ public class AutomatoPilhaService {
     }
 
     private PassoPilha passo(String estado, String entrada, int pos, Deque<Character> pilha, String acao) {
-        String restante = pos >= entrada.length() ? "λ" : entrada.substring(pos);
+        String restante = pos >= entrada.length() ? Simbolos.LAMBDA : entrada.substring(pos);
         return new PassoPilha(estado, restante, conteudoPilha(pilha), acao);
     }
 
@@ -120,14 +116,10 @@ public class AutomatoPilhaService {
     }
 
     private String descrever(TransicaoPilha t) {
-        String le = ehEpsilon(t.simboloLido()) ? "ε" : t.simboloLido();
-        String pop = ehEpsilon(t.desempilha()) ? "ε" : t.desempilha();
-        String push = ehEpsilon(t.empilha()) ? "ε" : t.empilha();
+        String le = Simbolos.ehEpsilon(t.simboloLido()) ? Simbolos.EPSILON : t.simboloLido();
+        String pop = Simbolos.ehEpsilon(t.desempilha()) ? Simbolos.EPSILON : t.desempilha();
+        String push = Simbolos.ehEpsilon(t.empilha()) ? Simbolos.EPSILON : t.empilha();
         return "le '" + le + "', desempilha " + pop + ", empilha " + push + " -> " + t.novoEstado();
-    }
-
-    private boolean ehEpsilon(String s) {
-        return s == null || EPSILON.contains(s);
     }
 
     private void validar(AutomatoPilha ap) {
@@ -143,7 +135,7 @@ public class AutomatoPilhaService {
         if (ap.simboloInicialPilha() == null || ap.simboloInicialPilha().length() != 1) {
             throw new ValidacaoException("Simbolo inicial da pilha invalido (use 1 caractere)");
         }
-        for (String f : ap.estadosFinais() == null ? Set.<String>of() : ap.estadosFinais()) {
+        for (String f : nuloParaVazio(ap.estadosFinais())) {
             if (!ap.estados().contains(f)) {
                 throw new ValidacaoException("Estado final '" + f + "' nao pertence ao conjunto de estados");
             }
@@ -152,9 +144,24 @@ public class AutomatoPilhaService {
             throw new ValidacaoException("A maquina precisa de uma lista de transicoes");
         }
         for (TransicaoPilha t : ap.transicoes()) {
+            if (t == null) {
+                throw new ValidacaoException("Transicao invalida: valor nulo");
+            }
             if (!ap.estados().contains(t.estadoAtual()) || !ap.estados().contains(t.novoEstado())) {
                 throw new ValidacaoException("Transicao usa estado inexistente: " + t.estadoAtual() + " -> " + t.novoEstado());
             }
+            validarSimboloOpcional(t.simboloLido(), "Simbolo lido");
+            validarSimboloOpcional(t.desempilha(), "Simbolo desempilhado");
         }
+    }
+
+    private void validarSimboloOpcional(String simbolo, String nome) {
+        if (!Simbolos.ehEpsilon(simbolo) && simbolo.length() != 1) {
+            throw new ValidacaoException(nome + " invalido (use 1 caractere ou epsilon)");
+        }
+    }
+
+    private <T> java.util.Collection<T> nuloParaVazio(java.util.Collection<T> c) {
+        return c == null ? List.of() : c;
     }
 }

@@ -5,11 +5,14 @@ import br.edu.av3.model.GLC.Gramatica;
 import br.edu.av3.model.GLC.NoDerivacao;
 import br.edu.av3.model.GLC.Producao;
 import br.edu.av3.model.GLC.ResultadoDerivacao;
+import br.edu.av3.util.Simbolos;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -21,20 +24,18 @@ import java.util.Set;
  * O proprio encadeamento das chamadas constroi a arvore de derivacao, e dela
  * geramos o passo a passo (derivacao mais a esquerda).
  *
- * Complexidade: O(b^d) no pior caso (busca em arvore de derivacoes). Suficiente
- * para as entradas do escopo. Alternativa polinomial: CYK O(n^3) - ver documento.
+ * Complexidade: O(b^d) no pior caso. O cache de derivacoes bem-sucedidas evita
+ * recalcular subarvores iguais sem alterar o resultado retornado.
  */
 @Service
 public class GramaticaService {
 
-    /** Representacoes aceitas para a producao vazia (epsilon). */
-    private static final Set<String> EPSILON = Set.of("", "λ", "ε", "&");
-
     public ResultadoDerivacao derivar(Gramatica g, String cadeia) {
         validar(g);
+        String alvo = cadeia == null ? "" : cadeia;
 
         char inicial = g.simboloInicial().charAt(0);
-        NoDerivacao arvore = parse(g, inicial, 0, cadeia.length(), cadeia, new HashSet<>());
+        NoDerivacao arvore = parse(g, inicial, 0, alvo.length(), alvo, new HashSet<>(), new HashMap<>());
 
         if (arvore == null) {
             return new ResultadoDerivacao(false, List.of(), null);
@@ -46,8 +47,8 @@ public class GramaticaService {
      * Tenta derivar exatamente o trecho [ini, fim) de 'alvo' a partir de 'simbolo'.
      * Retorna o no da arvore se conseguir, ou null (backtrack).
      */
-    private NoDerivacao parse(Gramatica g, char simbolo, int ini, int fim, String alvo, Set<String> caminho) {
-        // Terminal: casa exatamente 1 caractere.
+    private NoDerivacao parse(Gramatica g, char simbolo, int ini, int fim, String alvo,
+                              Set<String> caminho, Map<ChaveParse, NoDerivacao> memo) {
         if (ehTerminal(g, simbolo)) {
             if (fim - ini == 1 && alvo.charAt(ini) == simbolo) {
                 return folha(String.valueOf(simbolo));
@@ -55,13 +56,19 @@ public class GramaticaService {
             return null;
         }
 
-        // Variavel: tenta cada producao. Guarda contra ciclos (mesmo simbolo no mesmo trecho).
-        String chave = simbolo + "@" + ini + ":" + fim;
-        if (caminho.contains(chave)) {
+        String chaveCiclo = simbolo + "@" + ini + ":" + fim;
+        if (caminho.contains(chaveCiclo)) {
             return null;
         }
+
+        ChaveParse chaveMemo = new ChaveParse(simbolo, ini, fim);
+        NoDerivacao memorizado = memo.get(chaveMemo);
+        if (memorizado != null) {
+            return memorizado;
+        }
+
         Set<String> novoCaminho = new HashSet<>(caminho);
-        novoCaminho.add(chave);
+        novoCaminho.add(chaveCiclo);
 
         for (Producao p : g.producoes()) {
             if (p.variavel() == null || p.variavel().length() != 1 || p.variavel().charAt(0) != simbolo) {
@@ -70,16 +77,19 @@ public class GramaticaService {
             List<Character> rhs = simbolosDoLadoDireito(p);
 
             if (rhs.isEmpty()) {
-                // Producao vazia: so casa se o trecho tambem for vazio.
                 if (ini == fim) {
-                    return new NoDerivacao(String.valueOf(simbolo), List.of(folha("λ")));
+                    NoDerivacao no = new NoDerivacao(String.valueOf(simbolo), List.of(folha(Simbolos.LAMBDA)));
+                    memo.put(chaveMemo, no);
+                    return no;
                 }
                 continue;
             }
 
-            List<NoDerivacao> filhos = casarSequencia(g, rhs, 0, ini, fim, alvo, novoCaminho);
+            List<NoDerivacao> filhos = casarSequencia(g, rhs, 0, ini, fim, alvo, novoCaminho, memo);
             if (filhos != null) {
-                return new NoDerivacao(String.valueOf(simbolo), filhos);
+                NoDerivacao no = new NoDerivacao(String.valueOf(simbolo), filhos);
+                memo.put(chaveMemo, no);
+                return no;
             }
         }
         return null;
@@ -90,17 +100,17 @@ public class GramaticaService {
      * Retorna a lista de filhos (em ordem) ou null.
      */
     private List<NoDerivacao> casarSequencia(Gramatica g, List<Character> rhs, int idx,
-                                             int pos, int fim, String alvo, Set<String> caminho) {
+                                             int pos, int fim, String alvo, Set<String> caminho,
+                                             Map<ChaveParse, NoDerivacao> memo) {
         if (idx == rhs.size()) {
             return pos == fim ? new ArrayList<>() : null;
         }
 
         char simbolo = rhs.get(idx);
 
-        // Terminal consome exatamente 1 caractere -> poda forte.
         if (ehTerminal(g, simbolo)) {
             if (pos < fim && alvo.charAt(pos) == simbolo) {
-                List<NoDerivacao> resto = casarSequencia(g, rhs, idx + 1, pos + 1, fim, alvo, caminho);
+                List<NoDerivacao> resto = casarSequencia(g, rhs, idx + 1, pos + 1, fim, alvo, caminho, memo);
                 if (resto != null) {
                     resto.add(0, folha(String.valueOf(simbolo)));
                     return resto;
@@ -109,13 +119,12 @@ public class GramaticaService {
             return null;
         }
 
-        // Variavel: tenta cada quebra [pos, corte).
         for (int corte = pos; corte <= fim; corte++) {
-            NoDerivacao filho = parse(g, simbolo, pos, corte, alvo, caminho);
+            NoDerivacao filho = parse(g, simbolo, pos, corte, alvo, caminho, memo);
             if (filho == null) {
                 continue;
             }
-            List<NoDerivacao> resto = casarSequencia(g, rhs, idx + 1, corte, fim, alvo, caminho);
+            List<NoDerivacao> resto = casarSequencia(g, rhs, idx + 1, corte, fim, alvo, caminho, memo);
             if (resto != null) {
                 resto.add(0, filho);
                 return resto;
@@ -149,20 +158,20 @@ public class GramaticaService {
         return passos;
     }
 
-    /** Concatena os simbolos da fronteira, ignorando λ. Forma vazia vira "λ". */
+    /** Concatena os simbolos da fronteira, ignorando lambda. Forma vazia vira lambda. */
     private String formaSentencial(List<NoDerivacao> fronteira) {
         StringBuilder sb = new StringBuilder();
         for (NoDerivacao no : fronteira) {
-            if (!no.simbolo().equals("λ")) {
+            if (!no.simbolo().equals(Simbolos.LAMBDA)) {
                 sb.append(no.simbolo());
             }
         }
-        return sb.length() == 0 ? "λ" : sb.toString();
+        return sb.length() == 0 ? Simbolos.LAMBDA : sb.toString();
     }
 
     private List<Character> simbolosDoLadoDireito(Producao p) {
         List<Character> simbolos = new ArrayList<>();
-        if (p.producao() == null || EPSILON.contains(p.producao())) {
+        if (Simbolos.ehEpsilon(p.producao())) {
             return simbolos;
         }
         for (char c : p.producao().toCharArray()) {
@@ -187,6 +196,9 @@ public class GramaticaService {
         if (g.variaveis() == null || g.variaveis().isEmpty()) {
             throw new ValidacaoException("A gramatica precisa de pelo menos uma variavel");
         }
+        if (g.producoes() == null) {
+            throw new ValidacaoException("A gramatica precisa de uma lista de producoes");
+        }
         for (String v : g.variaveis()) {
             if (v == null || v.length() != 1) {
                 throw new ValidacaoException("Variavel invalida (use 1 caractere): '" + v + "'");
@@ -204,11 +216,14 @@ public class GramaticaService {
                 || !g.variaveis().contains(g.simboloInicial())) {
             throw new ValidacaoException("Simbolo inicial '" + g.simboloInicial() + "' nao e uma variavel valida");
         }
-        for (Producao p : nuloParaVazio(g.producoes())) {
+        for (Producao p : g.producoes()) {
+            if (p == null) {
+                throw new ValidacaoException("Producao invalida: valor nulo");
+            }
             if (p.variavel() == null || !g.variaveis().contains(p.variavel())) {
                 throw new ValidacaoException("Producao com lado esquerdo invalido: '" + p.variavel() + "'");
             }
-            if (p.producao() != null && !EPSILON.contains(p.producao())) {
+            if (p.producao() != null && !Simbolos.ehEpsilon(p.producao())) {
                 for (char c : p.producao().toCharArray()) {
                     String s = String.valueOf(c);
                     if (!g.variaveis().contains(s) && !ehTerminal(g, c)) {
@@ -222,5 +237,8 @@ public class GramaticaService {
 
     private <T> java.util.Collection<T> nuloParaVazio(java.util.Collection<T> c) {
         return c == null ? List.of() : c;
+    }
+
+    private record ChaveParse(char simbolo, int ini, int fim) {
     }
 }

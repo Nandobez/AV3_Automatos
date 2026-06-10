@@ -1,5 +1,7 @@
 package br.edu.av3.model.LF;
 
+import br.edu.av3.exception.ValidacaoException;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -20,6 +22,9 @@ public class Alfabeto {
 
     /** Cria o alfabeto a partir de uma String, um simbolo por caractere (ex.: "ab"). */
     public Alfabeto(String simbolos) {
+        if (simbolos == null || simbolos.isEmpty()) {
+            throw new ValidacaoException("Alfabeto deve ser finito e nao vazio");
+        }
         for (char c : simbolos.toCharArray()) {
             this.simbolos.add(c);
         }
