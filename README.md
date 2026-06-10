@@ -89,8 +89,6 @@ O projeto implementa uma máquina de Turing determinística de uma fita. A execu
 
 ### Arquitetura
 
-> Esta seção pode ser complementada posteriormente com os diagramas finais.
-
 O sistema está dividido em duas partes principais:
 
 - backend em Spring Boot, responsável pela lógica dos simuladores e exposição da API REST;
@@ -98,9 +96,9 @@ O sistema está dividido em duas partes principais:
 
 #### Diagrama UML
 
-Espaço reservado para o diagrama UML.
+A arquitetura do backend segue uma divisão em controladores, DTOs, modelos, serviços e classes utilitárias. Os controladores recebem as requisições HTTP, os DTOs representam os dados de entrada, os modelos representam as estruturas formais e os serviços concentram os algoritmos de execução.
 
-Sugestão de classes principais para o diagrama:
+Classes principais:
 
 - `LinguagemFormalController`
 - `AutomatoFinitoController`
@@ -119,9 +117,7 @@ Sugestão de classes principais para o diagrama:
 
 #### Casos de uso
 
-Espaço reservado para o diagrama de casos de uso.
-
-Casos de uso sugeridos:
+Casos de uso principais:
 
 - validar cadeia sobre um alfabeto;
 - concatenar cadeias;
@@ -298,7 +294,7 @@ O projeto apresenta uma implementação funcional e modular dos principais model
 
 As melhorias aplicadas aumentam a robustez e a organização do código. O uso de Strategy padroniza os simuladores, enquanto as factories separam a preparação dos modelos da execução. A indexação das transições melhora o desempenho e as validações reduzem falhas inesperadas durante o uso da API.
 
-Como evolução futura, podem ser adicionados diagramas UML, diagramas de casos de uso, testes de integração, validação declarativa com Bean Validation e algoritmos alternativos, como CYK para gramáticas livres de contexto.
+Como evolução do projeto, a gramática livre de contexto pode receber um algoritmo CYK para reconhecimento polinomial em gramáticas convertidas para Forma Normal de Chomsky. A API também pode incorporar validação declarativa com Bean Validation e testes de integração.
 
 ### Código Fonte
 
@@ -335,18 +331,14 @@ Saida.jsx
 
 #### GitHub
 
-Espaço reservado para o link do repositório no GitHub.
-
 ```text
-https://github.com/usuario/repositorio
+https://github.com/Nandobez/AV3_Automatos
 ```
 
 #### GitLab
 
-Espaço reservado para o link do repositório no GitLab.
-
 ```text
-https://gitlab.com/usuario/repositorio
+Não publicado
 ```
 
 ## README de Execução
@@ -379,7 +371,7 @@ As rotas da API começam com:
 http://localhost:8080/api
 ```
 
-Importante: esse comando fica "preso" no terminal enquanto o servidor estiver rodando. Isso é normal. Para encerrar o backend, pressione `Ctrl+C` nesse terminal.
+Esse comando mantém o terminal em execução enquanto o servidor estiver ativo. Para encerrar o backend, pressione `Ctrl+C` no terminal em que ele foi iniciado.
 
 ### Problemas comuns ao rodar o backend
 
@@ -402,7 +394,7 @@ b
 
 #### Erro dizendo que a porta 8080 já está em uso
 
-Esse erro significa que outro processo já está usando a porta do backend. Normalmente é uma instância anterior do próprio Spring Boot que ficou aberta.
+Esse erro significa que outro processo já está usando a porta do backend.
 
 Verifique qual processo está usando a porta:
 
@@ -422,19 +414,13 @@ Para encerrar esse processo:
 taskkill /F /PID <PID>
 ```
 
-Exemplo:
-
-```powershell
-taskkill /F /PID 12668
-```
-
 Depois rode novamente:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-Alternativa: se não quiser encerrar o processo atual, rode o backend em outra porta:
+Também é possível rodar o backend em outra porta:
 
 ```powershell
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.arguments=--server.port=8081"
@@ -646,8 +632,6 @@ Saída esperada:
   }
 }
 ```
-
-Observação: a árvore real retornada contém os filhos da derivação completa.
 
 ### Autômato com Pilha
 
