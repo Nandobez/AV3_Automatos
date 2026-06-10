@@ -8,7 +8,7 @@ set "RAIZ=%CD%"
 popd
 
 echo ==> Iniciando backend (Spring Boot) em http://localhost:8080 ...
-start "Backend - Spring Boot" cmd /k "cd /d %RAIZ% && mvn spring-boot:run"
+start "Backend - Spring Boot" cmd /k "cd /d %RAIZ% && .\mvnw.cmd spring-boot:run"
 
 echo ==> Preparando frontend ...
 cd /d %RAIZ%\frontend

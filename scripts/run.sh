@@ -7,7 +7,7 @@ RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$RAIZ"
 
 echo "==> Iniciando backend (Spring Boot) em http://localhost:8080 ..."
-mvn spring-boot:run &
+./mvnw spring-boot:run &
 BACK_PID=$!
 
 echo "==> Preparando frontend ..."
