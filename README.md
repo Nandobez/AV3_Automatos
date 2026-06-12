@@ -1,5 +1,7 @@
 # Simulador de Linguagens Formais e Modelos Computacionais
 
+**Vídeo de apresentação:** https://drive.google.com/drive/folders/1CPyp6nz-LScky3d4lpG56q6546kBEsPR?usp=sharing
+
 ## Documento Técnico
 
 ### Introdução
